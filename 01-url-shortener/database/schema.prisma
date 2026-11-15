@@ -1,0 +1,95 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  role         String    @default("USER")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  links        Link[]
+  domains      Domain[]
+  apiKeys      ApiKey[]
+
+  @@map("users")
+}
+
+model Domain {
+  id          String   @id @default(uuid())
+  domain      String   @unique
+  fallbackUrl String?
+  isVerified  Boolean  @default(false)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  links       Link[]
+
+  @@map("domains")
+}
+
+model Link {
+  id           String    @id @default(uuid())
+  slug         String    @unique
+  targetUrl    String
+  description  String?
+  isActive     Boolean   @default(true)
+  isProtected  Boolean   @default(false)
+  passwordHash String?
+  expiresAt    DateTime?
+  redirectCode Int       @default(307)
+  clickCount   Int       @default(0)
+  domainId     String?
+  domain       Domain?   @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  clicks       Click[]
+
+  @@index([slug])
+  @@index([userId])
+  @@index([domainId])
+  @@map("links")
+}
+
+model Click {
+  id        String   @id @default(uuid())
+  linkId    String
+  link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  timestamp DateTime @default(now())
+  ipHash    String?
+  country   String?
+  city      String?
+  referrer  String?
+  browser   String?
+  os        String?
+  device    String?
+  isUnique  Boolean  @default(false)
+
+  @@index([linkId])
+  @@index([timestamp])
+  @@map("clicks")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  key        String    @unique
+  name       String
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+
+  @@index([userId])
+  @@map("api_keys")
+}
