@@ -1,0 +1,115 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum LocationType {
+  GOOGLE_MEET
+  ZOOM
+  PHONE
+  IN_PERSON
+  CUSTOM
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED
+  COMPLETED
+}
+
+model User {
+  id           String         @id @default(uuid())
+  username     String         @unique
+  email        String         @unique
+  passwordHash String
+  name         String
+  timezone     String         @default("UTC")
+  bio          String?
+  eventTypes   EventType[]
+  schedules    Schedule[]
+  overrides    DateOverride[]
+  bookings     Booking[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([username])
+  @@index([email])
+}
+
+model EventType {
+  id              String       @id @default(uuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  slug            String
+  description     String?
+  durationMinutes Int          @default(30)
+  locationType    LocationType @default(GOOGLE_MEET)
+  locationValue   String?
+  bufferBefore    Int          @default(0)
+  bufferAfter     Int          @default(0)
+  isActive        Boolean      @default(true)
+  minNoticeHours  Int          @default(2)
+  maxDaysNotice   Int          @default(60)
+  bookings        Booking[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([userId, slug])
+  @@index([userId])
+}
+
+model Schedule {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek Int // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime String   @default("09:00") // "HH:mm" in 24h format
+  endTime   String   @default("17:00") // "HH:mm" in 24h format
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, dayOfWeek])
+}
+
+model DateOverride {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date          String // YYYY-MM-DD
+  isUnavailable Boolean  @default(true)
+  startTime     String? // If partial day override
+  endTime       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  uid                String        @unique @default(uuid()) // Unique public cancellation/rescheduling token
+  eventTypeId        String
+  eventType          EventType     @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviteeName        String
+  inviteeEmail       String
+  inviteeTimezone    String        @default("UTC")
+  inviteeNotes       String?
+  startTime          DateTime
+  endTime            DateTime
+  status             BookingStatus @default(CONFIRMED)
+  cancellationReason String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([userId, startTime, endTime])
+  @@index([eventTypeId])
+  @@index([uid])
+}
