@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: tradeo-task-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: tradeo_user
+      POSTGRES_PASSWORD: tradeo_secure_pass
+      POSTGRES_DB: task_management_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - task_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradeo_user -d task_management_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tradeo-task-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - task_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tradeo-task-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4003
+      DATABASE_URL: "postgresql://tradeo_user:tradeo_secure_pass@postgres:5432/task_management_db?schema=public"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: super-secret-task-management-jwt-key
+      FRONTEND_URL: "http://localhost:3003"
+    ports:
+      - "4003:4003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tradeo-task-frontend
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:4003/api/v1"
+      PORT: 3003
+    ports:
+      - "3003:3003"
+    depends_on:
+      - backend
+
+volumes:
+  task_postgres_data:
+  task_redis_data:
