@@ -1,0 +1,100 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  folders      Folder[]
+  snippets     Snippet[]
+  tags         Tag[]
+
+  @@map("users")
+}
+
+model Folder {
+  id        String    @id @default(uuid())
+  name      String
+  parentId  String?
+  parent    Folder?   @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[]  @relation("FolderToFolder")
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  snippets  Snippet[]
+
+  @@index([userId])
+  @@index([parentId])
+  @@map("folders")
+}
+
+model Snippet {
+  id          String           @id @default(uuid())
+  title       String
+  description String?
+  language    String           @default("typescript")
+  code        String
+  isFavorite  Boolean          @default(false)
+  isPublic    Boolean          @default(false)
+  folderId    String?
+  folder      Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  tags        SnippetTag[]
+  versions    SnippetVersion[]
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([language])
+  @@index([isFavorite])
+  @@map("snippets")
+}
+
+model Tag {
+  id        String       @id @default(uuid())
+  name      String
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  snippets  SnippetTag[]
+
+  @@unique([userId, name])
+  @@map("tags")
+}
+
+model SnippetTag {
+  snippetId String
+  tagId     String
+  snippet   Snippet @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([snippetId, tagId])
+  @@map("snippet_tags")
+}
+
+model SnippetVersion {
+  id            String   @id @default(uuid())
+  snippetId     String
+  snippet       Snippet  @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  code          String
+  language      String
+  title         String
+  summary       String?
+  createdAt     DateTime @default(now())
+
+  @@index([snippetId])
+  @@map("snippet_versions")
+}

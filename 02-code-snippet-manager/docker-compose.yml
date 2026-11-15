@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradeo-snippet-manager-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tradeo_user
+      POSTGRES_PASSWORD: tradeo_password
+      POSTGRES_DB: code_snippets_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradeo_user -d code_snippets_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tradeo-snippet-manager-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4001
+      DATABASE_URL: postgresql://tradeo_user:tradeo_password@postgres:5432/code_snippets_db?schema=public
+      JWT_SECRET: super-secret-jwt-key-tradeo-phase2-snippets-manager
+      FRONTEND_URL: http://localhost:3001
+      APP_BASE_URL: http://localhost:4001
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tradeo-snippet-manager-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      NEXT_PUBLIC_API_URL: http://localhost:4001/api/v1
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
