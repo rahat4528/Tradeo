@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradeo-crm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tradeo_user
+      POSTGRES_PASSWORD: tradeo_secure_pass
+      POSTGRES_DB: crm_application_db
+    ports:
+      - "5438:5432"
+    volumes:
+      - crm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradeo_user -d crm_application_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tradeo-crm-redis
+    restart: unless-stopped
+    ports:
+      - "6383:6379"
+    volumes:
+      - crm_redisdata:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tradeo-crm-backend
+    restart: unless-stopped
+    ports:
+      - "4006:4006"
+    environment:
+      PORT: 4006
+      DATABASE_URL: postgresql://tradeo_user:tradeo_secure_pass@postgres:5432/crm_application_db?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: super-secret-crm-jwt-key-change-in-production
+      FRONTEND_URL: http://localhost:3006
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tradeo-crm-frontend
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      PORT: 3006
+      NEXT_PUBLIC_API_URL: http://localhost:4006
+    depends_on:
+      - backend
+
+volumes:
+  crm_pgdata:
+  crm_redisdata:

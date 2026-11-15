@@ -1,0 +1,188 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  MANAGER
+  SALES_REP
+}
+
+enum CompanyTier {
+  ENTERPRISE
+  MID_MARKET
+  SMB
+}
+
+enum DealStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  MEETING
+  EMAIL
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Organization {
+  id         String     @id @default(uuid())
+  name       String
+  currency   String     @default("USD")
+  users      User[]
+  companies  Company[]
+  contacts   Contact[]
+  deals      Deal[]
+  activities Activity[]
+  tasks      Task[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model User {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String       @unique
+  passwordHash   String
+  name           String
+  role           UserRole     @default(SALES_REP)
+  companies      Company[]
+  contacts       Contact[]
+  deals          Deal[]
+  activities     Activity[]
+  tasks          Task[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Company {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerId        String?
+  owner          User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  name           String
+  domain         String?
+  industry       String?      @default("Technology")
+  phone          String?
+  address        String?
+  annualRevenue  Float        @default(0.0)
+  tier           CompanyTier  @default(MID_MARKET)
+  contacts       Contact[]
+  deals          Deal[]
+  activities     Activity[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([name])
+}
+
+model Contact {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  companyId      String?
+  company        Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  ownerId        String?
+  owner          User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  title          String?
+  leadSource     String?      @default("Inbound Web")
+  deals          Deal[]
+  activities     Activity[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([companyId])
+}
+
+model Deal {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  companyId      String?
+  company        Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contactId      String?
+  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  ownerId        String?
+  owner          User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  title          String
+  value          Float        @default(0.0)
+  stage          DealStage    @default(LEAD)
+  probability    Int          @default(10)
+  closeDate      DateTime?
+  activities     Activity[]
+  tasks          Task[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([stage])
+  @@index([ownerId])
+}
+
+model Activity {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId      String?
+  company        Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contactId      String?
+  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  dealId         String?
+  deal           Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  type           ActivityType @default(NOTE)
+  title          String
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([dealId])
+  @@index([companyId])
+}
+
+model Task {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dealId         String?
+  deal           Deal?        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  title          String
+  dueDate        DateTime?
+  isCompleted    Boolean      @default(false)
+  priority       Priority     @default(MEDIUM)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([dealId])
+}
