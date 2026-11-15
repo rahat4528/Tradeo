@@ -1,0 +1,122 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  name         String?
+  role         String      @default("OWNER")
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("users")
+}
+
+model Restaurant {
+  id             String   @id @default(uuid())
+  name           String
+  slug           String   @unique
+  description    String?
+  currency       String   @default("USD")
+  address        String?
+  phone          String?
+  headerImageUrl String?
+  users          User[]
+  menus          Menu[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([slug])
+  @@map("restaurants")
+}
+
+model Menu {
+  id           String     @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  isPublished  Boolean    @default(true)
+  startTime    String?    // e.g. "11:00"
+  endTime      String?    // e.g. "22:00"
+  daysOfWeek   String     @default("0,1,2,3,4,5,6") // Comma-separated days
+  sortOrder    Int        @default(0)
+  categories   Category[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([restaurantId])
+  @@map("menus")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  menuId      String
+  menu        Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  sortOrder   Int        @default(0)
+  items       MenuItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([menuId])
+  @@map("categories")
+}
+
+model MenuItem {
+  id              String         @id @default(uuid())
+  categoryId      String
+  category        Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  price           Float
+  promoPrice      Float?
+  imageUrl        String?
+  calories        Int?
+  prepTimeMinutes Int?
+  badge           String?        // e.g. "Chef Special", "Bestseller"
+  isAvailable     Boolean        @default(true)
+  allergens       String?        // Comma-separated e.g. "Gluten,Dairy"
+  dietary         String?        // Comma-separated e.g. "Vegetarian,Halal"
+  ingredients     String?
+  variantGroups   VariantGroup[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+model VariantGroup {
+  id            String          @id @default(uuid())
+  menuItemId    String
+  menuItem      MenuItem        @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name          String          // e.g. "Portion Size", "Choice of Dip"
+  minSelections Int             @default(1)
+  maxSelections Int             @default(1)
+  options       VariantOption[]
+
+  @@index([menuItemId])
+  @@map("variant_groups")
+}
+
+model VariantOption {
+  id             String       @id @default(uuid())
+  variantGroupId String
+  variantGroup   VariantGroup @relation(fields: [variantGroupId], references: [id], onDelete: Cascade)
+  name           String       // e.g. "Large", "Regular"
+  priceDelta     Float        @default(0.0)
+
+  @@index([variantGroupId])
+  @@map("variant_options")
+}

@@ -6,7 +6,7 @@ Index of all 13 standalone applications included in Tradeo:
 |---|---|---|---|---|
 | 01 | URL Shortener | [`01-url-shortener`](../01-url-shortener) | Link shortening, custom aliases, QR codes, geolocation/device click analytics, expiration, domain routing | Completed |
 | 02 | Code Snippet Manager | [`02-code-snippet-manager`](../02-code-snippet-manager) | Multi-language syntax highlighting, tag categorization, version history, instant search | Completed |
-| 03 | Restaurant Menu Management | [`03-restaurant-menu-management`](../03-restaurant-menu-management) | Menu scheduling, category/item administration, allergen & ingredient flags, QR digital menus | Planned |
+| 03 | Restaurant Menu Management | [`03-restaurant-menu-management`](../03-restaurant-menu-management) | Menu scheduling, category/item administration, allergen & ingredient flags, QR digital menus | Completed |
 | 04 | Task Management App | [`04-task-management-app`](../04-task-management-app) | Hierarchical task trees, recurrence schedules, priority matrix, deadline reminders | Planned |
 | 05 | Inventory Management System | [`05-inventory-management-system`](../05-inventory-management-system) | SKU tracking, multi-warehouse stock balancing, barcode generation, reorder alert workflows | Planned |
 | 06 | Calendar Scheduling App | [`06-calendar-scheduling-app`](../06-calendar-scheduling-app) | Public booking pages, timezone normalization, conflict prevention, schedule availability rules | Planned |
