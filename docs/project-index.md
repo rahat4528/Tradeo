@@ -8,7 +8,7 @@ Index of all 13 standalone applications included in Tradeo:
 | 02 | Code Snippet Manager | [`02-code-snippet-manager`](../02-code-snippet-manager) | Multi-language syntax highlighting, tag categorization, version history, instant search | Completed |
 | 03 | Restaurant Menu Management | [`03-restaurant-menu-management`](../03-restaurant-menu-management) | Menu scheduling, category/item administration, allergen & ingredient flags, QR digital menus | Completed |
 | 04 | Task Management App | [`04-task-management-app`](../04-task-management-app) | Hierarchical task trees, recurrence schedules, priority matrix, deadline reminders | Completed |
-| 05 | Inventory Management System | [`05-inventory-management-system`](../05-inventory-management-system) | SKU tracking, multi-warehouse stock balancing, barcode generation, reorder alert workflows | Planned |
+| 05 | Inventory Management System | [`05-inventory-management-system`](../05-inventory-management-system) | SKU tracking, multi-warehouse stock balancing, barcode generation, reorder alert workflows | Completed |
 | 06 | Calendar Scheduling App | [`06-calendar-scheduling-app`](../06-calendar-scheduling-app) | Public booking pages, timezone normalization, conflict prevention, schedule availability rules | Planned |
 | 07 | CRM Application | [`07-crm-application`](../07-crm-application) | Lead pipelines, contact interaction histories, deal tracking, sales performance dashboards | Planned |
 | 08 | API Testing Tool | [`08-api-testing-tool`](../08-api-testing-tool) | HTTP client workbench, request collections, environment variables, SSRF protection | Planned |
