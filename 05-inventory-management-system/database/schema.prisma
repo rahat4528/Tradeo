@@ -1,0 +1,198 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum MovementType {
+  RECEIVING
+  DISPATCH
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  SCRAP
+}
+
+enum POStatus {
+  PENDING
+  RECEIVED
+  CANCELLED
+}
+
+model Organization {
+  id             String          @id @default(uuid())
+  name           String
+  currency       String          @default("USD")
+  users          User[]
+  warehouses     Warehouse[]
+  products       Product[]
+  suppliers      Supplier[]
+  movements      Movement[]
+  purchaseOrders PurchaseOrder[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("organizations")
+}
+
+model User {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String       @unique
+  passwordHash   String
+  name           String?
+  role           Role         @default(ADMIN)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+model Warehouse {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  address        String?
+  phone          String?
+  stockLevels    StockLevel[]
+  movements      Movement[]
+  purchaseOrders PurchaseOrder[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@map("warehouses")
+}
+
+model Product {
+  id             String              @id @default(uuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sku            String
+  barcode        String?
+  name           String
+  description    String?
+  category       String              @default("General")
+  unit           String              @default("PCS")
+  costPrice      Float               @default(0.0)
+  sellingPrice   Float               @default(0.0)
+  reorderPoint   Int                 @default(10)
+  stockLevels    StockLevel[]
+  movements      Movement[]
+  poItems        PurchaseOrderItem[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([organizationId, category])
+  @@map("products")
+}
+
+model StockLevel {
+  id          String    @id @default(uuid())
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int       @default(0)
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([warehouseId, productId])
+  @@index([warehouseId])
+  @@index([productId])
+  @@map("stock_levels")
+}
+
+model Movement {
+  id                String       @id @default(uuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId       String
+  warehouse         Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  type              MovementType
+  quantityDelta     Int
+  previousQuantity  Int
+  resultingQuantity Int
+  reference         String?
+  notes             String?
+  userId            String?
+  createdAt         DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([productId])
+  @@index([warehouseId])
+  @@index([createdAt])
+  @@map("movements")
+}
+
+model Supplier {
+  id             String          @id @default(uuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  contactPerson  String?
+  email          String?
+  phone          String?
+  address        String?
+  paymentTerms   String?
+  purchaseOrders PurchaseOrder[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id             String              @id @default(uuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplierId     String
+  supplier       Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  warehouseId    String
+  warehouse      Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  poNumber       String
+  status         POStatus            @default(PENDING)
+  totalCost      Float               @default(0.0)
+  notes          String?
+  receivedDate   DateTime?
+  items          PurchaseOrderItem[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([organizationId, poNumber])
+  @@index([organizationId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id               String        @id @default(uuid())
+  purchaseOrderId  String
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantityOrdered  Int
+  quantityReceived Int           @default(0)
+  unitCost         Float
+
+  @@index([purchaseOrderId])
+  @@map("purchase_order_items")
+}
