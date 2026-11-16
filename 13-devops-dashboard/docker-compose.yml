@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradeo-devops-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: devops_dashboard
+    ports:
+      - "5444:5432"
+    volumes:
+      - devops_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d devops_dashboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tradeo-devops-backend
+    restart: unless-stopped
+    environment:
+      PORT: 4012
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/devops_dashboard?schema=public"
+      JWT_SECRET: super-secret-devops-dashboard-jwt-key-3012
+      CORS_ORIGIN: "http://localhost:3012"
+    ports:
+      - "4012:4012"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tradeo-devops-frontend
+    restart: unless-stopped
+    environment:
+      PORT: 3012
+      NEXT_PUBLIC_API_URL: "http://localhost:4012/api"
+    ports:
+      - "3012:3012"
+    depends_on:
+      - backend
+
+volumes:
+  devops_postgres_data:
