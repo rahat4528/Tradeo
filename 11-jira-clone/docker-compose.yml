@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradeo-jira-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jira_clone
+    ports:
+      - "5442:5432"
+    volumes:
+      - jira_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d jira_clone"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tradeo-jira-redis
+    restart: unless-stopped
+    ports:
+      - "6384:6379"
+    volumes:
+      - jira_redis_data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tradeo-jira-backend
+    restart: unless-stopped
+    environment:
+      PORT: 4010
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/jira_clone?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: super-secret-jira-clone-jwt-key-3010
+      CORS_ORIGIN: "http://localhost:3010"
+    ports:
+      - "4010:4010"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tradeo-jira-frontend
+    restart: unless-stopped
+    environment:
+      PORT: 3010
+      NEXT_PUBLIC_API_URL: "http://localhost:4010/api"
+    ports:
+      - "3010:3010"
+    depends_on:
+      - backend
+
+volumes:
+  jira_postgres_data:
+  jira_redis_data:

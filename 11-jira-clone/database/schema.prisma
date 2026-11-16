@@ -1,0 +1,151 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum IssueType {
+  EPIC
+  STORY
+  TASK
+  BUG
+}
+
+enum IssuePriority {
+  LOWEST
+  LOW
+  MEDIUM
+  HIGH
+  HIGHEST
+}
+
+enum SprintStatus {
+  FUTURE
+  ACTIVE
+  CLOSED
+}
+
+enum StateCategory {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  password       String
+  name           String
+  avatarUrl      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  ownedProjects  Project[] @relation("ProjectOwner")
+  assignedIssues Issue[]   @relation("IssueAssignee")
+  reportedIssues Issue[]   @relation("IssueReporter")
+  comments       Comment[]
+
+  @@map("users")
+}
+
+model Project {
+  id             String          @id @default(uuid())
+  key            String          @unique
+  name           String
+  description    String?
+  ownerId        String
+  issueCounter   Int             @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  owner          User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  sprints        Sprint[]
+  issues         Issue[]
+  workflowStates WorkflowState[]
+
+  @@map("projects")
+}
+
+model WorkflowState {
+  id        String        @id @default(uuid())
+  projectId String
+  name      String
+  category  StateCategory @default(TODO)
+  order     Int           @default(0)
+  isDefault Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  issues    Issue[]
+
+  @@unique([projectId, name])
+  @@map("workflow_states")
+}
+
+model Sprint {
+  id        String       @id @default(uuid())
+  projectId String
+  name      String
+  goal      String?
+  status    SprintStatus @default(FUTURE)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  issues    Issue[]
+
+  @@map("sprints")
+}
+
+model Issue {
+  id          String        @id @default(uuid())
+  key         String        @unique
+  projectId   String
+  sprintId    String?
+  parentId    String?
+  title       String
+  description String?
+  type        IssueType     @default(STORY)
+  priority    IssuePriority @default(MEDIUM)
+  statusId    String
+  reporterId  String
+  assigneeId  String?
+  storyPoints Int?
+  position    Float         @default(0.0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint      Sprint?       @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  status      WorkflowState @relation(fields: [statusId], references: [id])
+  reporter    User          @relation("IssueReporter", fields: [reporterId], references: [id])
+  assignee    User?         @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  parent      Issue?        @relation("IssueHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  subtasks    Issue[]       @relation("IssueHierarchy")
+  comments    Comment[]
+
+  @@index([projectId, sprintId])
+  @@index([statusId])
+  @@map("issues")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  issueId   String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+  @@map("comments")
+}
