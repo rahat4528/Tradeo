@@ -41,6 +41,7 @@ Tradeo is an enterprise-grade collection of **13 standalone, production-quality 
 - [Technology Stack Matrix](./docs/technology-stack.md)
 - [Project Index](./docs/project-index.md)
 - [Progress Tracker](./PROGRESS.md)
+- [Final Delivery & Deployment Report](./docs/final-delivery-report.md)
 
 ---
 
