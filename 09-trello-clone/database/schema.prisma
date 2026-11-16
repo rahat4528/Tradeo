@@ -1,0 +1,178 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  workspaces   Workspace[]
+  boardMembers BoardMember[]
+  cardMembers  CardMember[]
+  comments     Comment[]
+  activities   Activity[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Workspace {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  boards      Board[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model Board {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  color       String        @default("#0079bf")
+  isArchived  Boolean       @default(false)
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  ownerId     String
+  lists       List[]
+  members     BoardMember[]
+  activities  Activity[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([workspaceId])
+}
+
+model BoardMember {
+  id        String     @id @default(uuid())
+  boardId   String
+  board     Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      MemberRole @default(MEMBER)
+  createdAt DateTime   @default(now())
+
+  @@unique([boardId, userId])
+  @@index([userId])
+}
+
+model List {
+  id         String   @id @default(uuid())
+  title      String
+  position   Float    @default(65535.0)
+  isArchived Boolean  @default(false)
+  boardId    String
+  board      Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards      Card[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([boardId])
+  @@index([position])
+}
+
+model Card {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  position    Float        @default(65535.0)
+  dueDate     DateTime?
+  isCompleted Boolean      @default(false)
+  coverColor  String?
+  labels      Json?        @default("[]") // [{ id, text, color }]
+  listId      String
+  list        List         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  members     CardMember[]
+  checklists  Checklist[]
+  comments    Comment[]
+  activities  Activity[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([listId])
+  @@index([position])
+}
+
+model CardMember {
+  id        String   @id @default(uuid())
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([cardId, userId])
+  @@index([userId])
+}
+
+model Checklist {
+  id        String          @id @default(uuid())
+  title     String
+  cardId    String
+  card      Card            @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  items     ChecklistItem[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([cardId])
+}
+
+model ChecklistItem {
+  id          String    @id @default(uuid())
+  title       String
+  isCompleted Boolean   @default(false)
+  position    Float     @default(65535.0)
+  checklistId String
+  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([checklistId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cardId])
+  @@index([authorId])
+}
+
+model Activity {
+  id        String   @id @default(uuid())
+  action    String
+  details   Json?    @default("{}")
+  cardId    String?
+  card      Card?    @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([boardId])
+  @@index([cardId])
+}
