@@ -1,0 +1,85 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum BlockType {
+  PARAGRAPH
+  HEADING_1
+  HEADING_2
+  HEADING_3
+  BULLET_LIST
+  NUMBERED_LIST
+  TODO_LIST
+  CODE_BLOCK
+  QUOTE
+  CALLOUT
+  DIVIDER
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  workspaces   Workspace[]
+  pages        Page[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  pages     Page[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model Page {
+  id          String    @id @default(uuid())
+  title       String    @default("Untitled")
+  icon        String?   @default("📄")
+  coverUrl    String?
+  isFavorite  Boolean   @default(false)
+  isArchived  Boolean   @default(false)
+  position    Float     @default(65535.0)
+  parentId    String?
+  parent      Page?     @relation("PageHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Page[]    @relation("PageHierarchy")
+  blocks      Block[]
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([parentId])
+  @@index([isArchived])
+}
+
+model Block {
+  id         String    @id @default(uuid())
+  type       BlockType @default(PARAGRAPH)
+  content    String    @default("")
+  position   Float     @default(65535.0)
+  properties Json?     @default("{}") // e.g. { checked: boolean, language: string, color: string }
+  pageId     String
+  page       Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([pageId])
+  @@index([position])
+}

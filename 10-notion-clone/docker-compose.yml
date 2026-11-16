@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tradeo_notion_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notion_db
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres_notion_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d notion_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tradeo_notion_backend
+    environment:
+      PORT: 4009
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/notion_db?schema=public
+      JWT_SECRET: super-secret-notion-clone-jwt-key-32chars
+      JWT_EXPIRES_IN: 7d
+    ports:
+      - "4009:4009"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tradeo_notion_frontend
+    environment:
+      PORT: 3009
+      NEXT_PUBLIC_API_URL: http://localhost:4009/api/v1
+    ports:
+      - "3009:3009"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_notion_data:
