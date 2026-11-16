@@ -11,7 +11,7 @@ Index of all 13 standalone applications included in Tradeo:
 | 05 | Inventory Management System | [`05-inventory-management-system`](../05-inventory-management-system) | SKU tracking, multi-warehouse stock balancing, barcode generation, reorder alert workflows | Completed |
 | 06 | Calendar Scheduling App | [`06-calendar-scheduling-app`](../06-calendar-scheduling-app) | Public booking pages, timezone normalization, conflict prevention, schedule availability rules | Completed |
 | 07 | CRM Application | [`07-crm-application`](../07-crm-application) | Lead pipelines, contact interaction histories, deal tracking, sales performance dashboards | Completed |
-| 08 | API Testing Tool | [`08-api-testing-tool`](../08-api-testing-tool) | HTTP client workbench, request collections, environment variables, SSRF protection | Planned |
+| 08 | API Testing Tool | [`08-api-testing-tool`](../08-api-testing-tool) | HTTP client workbench, request collections, environment variables, SSRF protection | Completed |
 | 09 | Trello Clone | [`09-trello-clone`](../09-trello-clone) | Realtime multi-board kanban, drag-and-drop cards, checklist subtasks, activity feeds | Planned |
 | 10 | Notion Clone | [`10-notion-clone`](../10-notion-clone) | Block-based rich text document editor, hierarchical page trees, media attachments | Planned |
 | 11 | Jira Clone | [`11-jira-clone`](../11-jira-clone) | Agile sprint planning, issue triage, backlog management, estimation reporting | Planned |
