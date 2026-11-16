@@ -14,6 +14,6 @@ Index of all 13 standalone applications included in Tradeo:
 | 08 | API Testing Tool | [`08-api-testing-tool`](../08-api-testing-tool) | HTTP client workbench, request collections, environment variables, SSRF protection | Completed |
 | 09 | Trello Clone | [`09-trello-clone`](../09-trello-clone) | Realtime multi-board kanban, drag-and-drop cards, checklist subtasks, activity feeds | Completed |
 | 10 | Notion Clone | [`10-notion-clone`](../10-notion-clone) | Block-based rich text document editor, hierarchical page trees, markdown/HTML export, search | Completed |
-| 11 | Jira Clone | [`11-jira-clone`](../11-jira-clone) | Agile sprint planning, issue triage, backlog management, estimation reporting | Planned |
+| 11 | Jira Clone | [`11-jira-clone`](../11-jira-clone) | Agile sprint planning, issue triage, backlog management, estimation reporting | Completed |
 | 12 | Kanban Board | [`12-kanban-board`](../12-kanban-board) | Visual workflow board focused on Work-In-Progress (WIP) constraints and cycle-time optimization | Planned |
 | 13 | DevOps Dashboard | [`13-devops-dashboard`](../13-devops-dashboard) | Service health monitoring, metric ingestion, anomaly threshold alerts, uptime tracking | Planned |
