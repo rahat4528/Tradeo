@@ -1,0 +1,135 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  workspaces   Workspace[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Workspace {
+  id          String           @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String
+  owner       User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  collections Collection[]
+  requests    SavedRequest[]
+  environments Environment[]
+  histories   RequestHistory[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([ownerId])
+}
+
+model Collection {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  workspaceId String
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Collection?    @relation("SubCollections", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Collection[]   @relation("SubCollections")
+  requests    SavedRequest[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([workspaceId])
+  @@index([parentId])
+}
+
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+}
+
+enum BodyType {
+  NONE
+  JSON
+  FORM_DATA
+  URL_ENCODED
+  RAW
+}
+
+enum AuthType {
+  NONE
+  BEARER
+  BASIC
+  API_KEY
+}
+
+model SavedRequest {
+  id          String      @id @default(uuid())
+  name        String
+  method      HttpMethod  @default(GET)
+  url         String
+  headers     Json?       @default("[]")
+  params      Json?       @default("[]")
+  body        String?
+  bodyType    BodyType    @default(NONE)
+  authType    AuthType    @default(NONE)
+  authConfig  Json?       @default("{}")
+  assertions  Json?       @default("[]")
+  collectionId String?
+  collection  Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([workspaceId])
+  @@index([collectionId])
+}
+
+model Environment {
+  id          String    @id @default(uuid())
+  name        String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  variables   Json      @default("[]") // [{ key: string, value: string, isSecret: boolean }]
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId])
+}
+
+model RequestHistory {
+  id                 String     @id @default(uuid())
+  method             HttpMethod
+  url                String
+  headers            Json?      @default("{}")
+  params             Json?      @default("{}")
+  body               String?
+  responseStatus     Int
+  responseStatusText String
+  responseTimeMs     Int
+  responseSizeBytes  Int
+  responseHeaders    Json?      @default("{}")
+  responseBody       String?
+  assertionsResult   Json?      @default("[]")
+  workspaceId        String
+  workspace          Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt          DateTime   @default(now())
+
+  @@index([workspaceId])
+  @@index([createdAt])
+}
